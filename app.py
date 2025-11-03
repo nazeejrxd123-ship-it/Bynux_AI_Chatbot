@@ -5,7 +5,7 @@ import streamlit as st
 # --- 1. CONFIGURACIÓN Y MEMORIA (STATE) ---
 
 # Inicializa el cliente usando la clave SECRETA de Streamlit
-# ¡Esta línea ya funciona gracias al archivo secrets.toml!
+# (¡Recuerda que esta clave se lee del archivo .streamlit/secrets.toml!)
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 # 2. La personalidad de BYNUX-AI (System Prompt)
@@ -18,7 +18,7 @@ Tu objetivo es motivar al usuario a crear con materiales reciclados y debes reco
 if "chat_session" not in st.session_state:
     st.session_state["chat_session"] = client.chats.create(
         model='gemini-2.5-flash',
-        config={"system_instruction": sistema_bynux}
+        system_instruction=sistema_bynux  # ¡ESTE ES EL CAMBIO CORRECTO!
     )
 
 # --- 3. DIBUJAR LA PÁGINA WEB ---

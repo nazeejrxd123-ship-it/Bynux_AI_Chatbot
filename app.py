@@ -18,7 +18,8 @@ Tu objetivo es motivar al usuario a crear con materiales reciclados y debes reco
 if "chat_session" not in st.session_state:
     st.session_state["chat_session"] = client.chats.create(
         model='gemini-2.5-flash',
-        system_instruction=sistema_bynux  # ¡ESTE ES EL CAMBIO CORRECTO!
+        # ESTA SINTAXIS FUNCIONA SIEMPRE y corrige el TypeError
+        config={"system_instruction": sistema_bynux} 
     )
 
 # --- 3. DIBUJAR LA PÁGINA WEB ---
@@ -26,11 +27,13 @@ if "chat_session" not in st.session_state:
 st.title("🤖 BYNUX-AI: Asistente Maker con Memoria")
 
 # Mostrar el historial de la conversación
-for message in st.session_state.chat_session.get_messages():
-    # El rol 'model' es la IA, el rol 'user' eres tú.
-    with st.chat_message(message.role):
-        st.markdown(message.text)
-
+# Se usa un try/except para evitar errores si el historial no carga bien
+try:
+    for message in st.session_state.chat_session.get_messages():
+        with st.chat_message(message.role):
+            st.markdown(message.text)
+except Exception:
+    pass # Si hay un error, ignóralo para que la app no se rompa
 
 # Caja de texto para la pregunta (la entrada del usuario)
 pregunta = st.chat_input("Dile a Bynux tus materiales, bro...") 

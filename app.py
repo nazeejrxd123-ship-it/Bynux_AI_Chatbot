@@ -2,31 +2,48 @@ import os
 from google import genai
 import streamlit as st 
 
-# --- 1. CONFIGURACIÓN INICIAL Y SECRETO ---
-# La clave API se lee de forma segura desde el archivo .streamlit/secrets.toml
-# ¡Esta línea reemplaza a tu clave pegada directamente!
-client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+# --- 1. CONFIGURACIÓN Y MEMORIA (STATE) ---
 
+# Inicializa el cliente usando la clave SECRETA de Streamlit
+# ¡Esta línea ya funciona gracias al archivo secrets.toml!
+client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 # 2. La personalidad de BYNUX-AI (System Prompt)
 sistema_bynux = """
 Eres BYNUX-AI, un asistente experto en proyectos maker que usa emojis y la palabra 'bro'. 
-Tu objetivo es motivar al usuario a crear con materiales reciclados.
+Tu objetivo es motivar al usuario a crear con materiales reciclados y debes recordar el contexto de la conversación.
 """
 
-# --- 3. DIBUJAR LA PÁGINA WEB ---
-st.title("🤖 BYNUX-AI: Tu Asistente Maker") # Título de la app
-
-# Caja de texto para tu pregunta
-pregunta = st.text_input("Escribe tu pregunta para Bynux AI, bro:") 
-
-if pregunta: # Si el usuario escribió algo y presionó Enter
-    # Llamada a la API
-    response = client.models.generate_content(
+# Inicializa la sesión de chat SÓLO si no existe en la memoria de la app.
+if "chat_session" not in st.session_state:
+    st.session_state["chat_session"] = client.chats.create(
         model='gemini-2.5-flash',
-        contents=[sistema_bynux, pregunta]
+        config={"system_instruction": sistema_bynux}
     )
+
+# --- 3. DIBUJAR LA PÁGINA WEB ---
+
+st.title("🤖 BYNUX-AI: Asistente Maker con Memoria")
+
+# Mostrar el historial de la conversación
+for message in st.session_state.chat_session.get_messages():
+    # El rol 'model' es la IA, el rol 'user' eres tú.
+    with st.chat_message(message.role):
+        st.markdown(message.text)
+
+
+# Caja de texto para la pregunta (la entrada del usuario)
+pregunta = st.chat_input("Dile a Bynux tus materiales, bro...") 
+
+if pregunta: 
+    # Muestra la pregunta del usuario inmediatamente
+    with st.chat_message("user"):
+        st.markdown(pregunta)
     
-    # Mostrar la respuesta en la web
-    st.write("--- Respuesta de Bynux AI ---")
-    st.write(response.text)
+    # Envía el mensaje a la IA y usa la sesión para mantener el historial
+    with st.spinner("Bynux AI está pensando..."): # Muestra que está cargando
+        response = st.session_state.chat_session.send_message(pregunta)
+
+    # Muestra la respuesta de la IA
+    with st.chat_message("model"):
+        st.markdown(response.text)
